@@ -8,6 +8,7 @@ import (
 	gzViper "github.com/gozix/viper/v3"
 	gzZap "github.com/gozix/zap/v2"
 
+	"github.com/XSAM/otelsql"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -123,6 +124,17 @@ func (t *Bundle) provideTracerProvider(
 
 	// Set global
 	otel.SetTracerProvider(tp)
+
+	drivers := cfg.GetStringSlice("otel.sql.drivers")
+	for _, driver := range drivers {
+		driverName, err := otelsql.Register(driver, otelsql.WithTracerProvider(tp))
+		if err != nil {
+			logger.Warn("register sql driver fail", zap.Error(err))
+			continue
+		}
+
+		logger.Info("register sql driver", zap.String("name", driverName))
+	}
 
 	return tp
 }
